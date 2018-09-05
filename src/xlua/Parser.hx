@@ -45,6 +45,27 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                 parseStatements(stmts);
                 stmts;
             };
+            case [{tok:Kwd(KwdWhile)}]:{
+                var condition = parseLogicalOp();
+                var doBlock:Array<RuleStat> = new Array<RuleStat>();
+                switch  stream{
+                    case [{tok:Kwd(KwdDo)}]:{
+                        parseStatements(doBlock);
+                        switch stream {
+                            case [{tok:Kwd(KwdEnd)}]:{}
+                            case _:{}
+                            default: {
+                                throw "Parse error: expected 'end' after do-statement";
+                            }
+                        }
+                    }
+                    case _:
+                        throw "Parse error: invalid while statment. expected 'do'";
+                }
+                stmts.push(SWhile(condition, doBlock));
+                parseStatements(stmts);
+                stmts;
+            };
             // assignments
             // x = exp or x, y, z = exp, exp, exp
             case [{tok:Const(c)}]:{
@@ -70,7 +91,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                                         switch v {
                                                             case {tok:PClose}:
                                                             default:{
-                                                                throw "Parse error: Parenthesis opened but not close. expected ')'";
+                                                                throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                                             }
                                                         }
                                                     }
@@ -89,7 +110,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                         switch v {
                                             case {tok:PClose}:
                                             default:{
-                                                throw "Parse error: Parenthesis opened but not close. expected ')'";
+                                                throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                             }
                                         }
                                     }
@@ -106,6 +127,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                         stmts.push(SAssign(lhs, rhs));
                     };
                     case [{tok:Eof}]:
+                    case _:
                 }
                 parseStatements(stmts);
                 stmts;              
@@ -130,6 +152,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                 stmts.push(SLocalAssign(lhs, rhs));
                             };
                             case [{tok:Eof}]:
+                            case _:
                         }                      
                     };
                     case [{tok:Kwd(KwdFunction)}]:{
@@ -214,7 +237,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                        switch v {
                                            case {tok:PClose}:
                                            default:{
-                                               throw "Parse error: Parenthesis opened but not close. expected ')'";
+                                               throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                            }
                                        }
                                    }
@@ -237,18 +260,38 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                     case [_ => v]:{
                         switch v {
                             case {tok:PClose}:
-                                default:{
-                                    throw "Parse error: Parenthesis opened but not close. expected ')'";
-                                }
+                            case _:{
+                                    throw "Parse error: Parenthesis opened but not closed. expected ')'";
                             }
+                        };
+
                     }
                 }
                 stmts.push(SParenthesis(exprs));
                 parseStatements(stmts);
                 stmts;
             };
-            case [{tok:Eof}]:
+            case [{tok:Kwd(KwdDo)}]:{
+                var doBlock:Array<RuleStat> = new Array<RuleStat>();
+                parseStatements(doBlock);
+                switch stream {
+                    case [{tok:Kwd(KwdEnd)}]:{}
+                    case _:{}
+                    default: {
+                        throw "Parse error: expected 'end' after do-statement";
+                    }
+                }
+                stmts.push(SDoBlock(doBlock));
+                parseStatements(stmts);
                 stmts;
+            }
+            case [{tok:Eof}]:{
+                stmts;
+            };
+            case _:{
+                //trace("end");
+                stmts;
+            }
         });
     }
 
@@ -319,6 +362,13 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
              default: 
                 null;
          });
+    }
+
+
+    function parseDoStatement(stmts:Array<RuleStat>){
+        var doBlock = [];
+        parseStatements(doBlock);
+        stmts.push(SDoBlock(doBlock));
     }
 
 
@@ -405,7 +455,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                                                     switch v {
                                                                         case {tok:PClose}:
                                                                         default:{
-                                                                            throw "Parse error: Parenthesis opened but not close. expected ')'";
+                                                                            throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                                                         }
                                                                     }
                                                                 }
@@ -417,17 +467,14 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                             }
                                         };
                                         case [{tok:POpen}]:{
-                                                
                                                 parseExprList(params);
-
                                                 ret.push(EFunctionCall(null, id, null, params, false));
-                                                //stmts.push(SFunctionCall());
                                                 switch stream {
                                                     case [_ => v]:{
                                                         switch v {
                                                             case {tok:PClose}:
                                                             default:{
-                                                                throw "Parse error: Parenthesis opened but not close. expected ')'";
+                                                                throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                                             }
                                                         }
                                                     }
@@ -481,7 +528,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                                                     switch v {
                                                                         case {tok:PClose}:
                                                                         default:{
-                                                                            throw "Parse error: Parenthesis opened but not close. expected ')'";
+                                                                            throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                                                         }
                                                                     }
                                                                 }
@@ -501,7 +548,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                                         switch v {
                                                             case {tok:PClose}:
                                                             default:{
-                                                                throw "Parse error: Parenthesis opened but not close. expected ')'";
+                                                                throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                                             }
                                                         }
                                                     }
@@ -543,7 +590,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                         switch v {
                             case {tok:PClose}:
                             default:{
-                                throw "Parse error: Parenthesis opened but not close. expected ')'";
+                                throw "Parse error: Parenthesis opened but not closed. expected ')'";
                             }
                         }
                     }
@@ -552,7 +599,6 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                 ret;
             };
             case _:{
-                trace("a");
                 ret;
             };
         });

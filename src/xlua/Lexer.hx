@@ -124,7 +124,7 @@ class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
 			var token = mk(lexer, Const(CString(unescape(buf.toString(), mkPos(pmin)))));
 			token.pos.min = pmin.pmin; token;
 		},
-		'-- \\*' => {
+		'--\\[\\[' => {
 			buf = new StringBuf();
 			var pmin = lexer.curPos();
 			var pmax = try lexer.token(comment) catch (e:haxe.io.Eof) throw new LexerError(UnclosedComment, mkPos(pmin));
@@ -134,12 +134,13 @@ class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
         "#" + ident => mk(lexer, Sharp(lexer.current.substr(1))),
 		ident => {
 			var kwd = keywords.get(lexer.current);
-			if(kwd != null)
+			if(kwd != null){
 				mk(lexer, Kwd(kwd));
-			else
+			} else {
 				mk(lexer, Const(CIdent(lexer.current)));
-		} 
-    ];
+			}
+		}
+	];
 
 	public static var string = @:rule [
 		"\\\\\\\\" => {
@@ -193,7 +194,7 @@ class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
     ];
 
 	public static var comment = @:rule [
-	 	"" => lexer.curPos().pmax,
+	 	"\\]\\]" => lexer.curPos().pmax,
 	];
 
 	static inline function unescapePos(pos:Dynamic, index:Int, length:Int) {

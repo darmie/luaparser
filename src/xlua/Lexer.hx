@@ -1,4 +1,5 @@
 package xlua;
+import byte.ByteData;
 import haxe.macro.Expr;
 import xlua.Data.Token;
 
@@ -27,17 +28,18 @@ class LexerError {
 
 class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
 
-	static function mkPos(p:hxparse.Position) {
+	static function mkPos(p:hxparse.Position, ?td) {
 		return {
 			file: p.psource,
 			min: p.pmin,
-			max: p.pmax
+			max: p.pmax,
+			line: p.getLinePosition(td)
 		};
 	}
 
 
 	static function mk(lexer:hxparse.Lexer, td) {
-		return new xlua.Data.Token(td, mkPos(lexer.curPos()));
+		return new xlua.Data.Token(td, mkPos(lexer.curPos(), lexer.input));
 	}
 
 	// @:mapping generates a map with lowercase enum constructor names as keys
@@ -113,21 +115,21 @@ class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
 		'"' => {
 			buf = new StringBuf();
 			var pmin = lexer.curPos();
-			var pmax = try lexer.token(string) catch (e:haxe.io.Eof) throw new LexerError(UnterminatedString, mkPos(pmin));
+			var pmax = try lexer.token(string) catch (e:haxe.io.Eof) throw new LexerError(UnterminatedString, mkPos(pmin, lexer.input));
 			var token = mk(lexer, Const(CString(unescape(buf.toString(), mkPos(pmin)))));
 			token.pos.min = pmin.pmin; token;
 		},
 		"'" => {
 			buf = new StringBuf();
 			var pmin = lexer.curPos();
-			var pmax = try lexer.token(string2) catch (e:haxe.io.Eof) throw new LexerError(UnterminatedString, mkPos(pmin));
+			var pmax = try lexer.token(string2) catch (e:haxe.io.Eof) throw new LexerError(UnterminatedString, mkPos(pmin, lexer.input));
 			var token = mk(lexer, Const(CString(unescape(buf.toString(), mkPos(pmin)))));
 			token.pos.min = pmin.pmin; token;
 		},
 		'--\\[\\[' => {
 			buf = new StringBuf();
 			var pmin = lexer.curPos();
-			var pmax = try lexer.token(comment) catch (e:haxe.io.Eof) throw new LexerError(UnclosedComment, mkPos(pmin));
+			var pmax = try lexer.token(comment) catch (e:haxe.io.Eof) throw new LexerError(UnclosedComment, mkPos(pmin, lexer.input));
 			var token = mk(lexer, Comment(buf.toString()));
 			token.pos.min = pmin.pmin; token;
 		},
@@ -201,7 +203,8 @@ class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
 		return {
 			file: pos.source,
 			min: pos.min + index,
-			max: pos.min + index + length
+			max: pos.min + index + length,
+			line: null
 		}
 	}
 

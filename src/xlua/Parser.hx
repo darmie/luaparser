@@ -1,5 +1,7 @@
 package xlua;
 
+import byte.ByteData;
+import haxe.io.BytesData;
 import xlua.Data.Keyword;
 import hxparse.Parser.parse as parse;
 import hxparse.ParserBuilder;
@@ -271,7 +273,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                 parseStatements(stmts);
                 stmts;
             };
-            case [{tok:Kwd(KwdDo)}]:{
+            case [{tok:Kwd(KwdDo), pos:p}]:{
                 var doBlock:Array<RuleStat> = new Array<RuleStat>();
                 parseStatements(doBlock);
                 switch stream {
@@ -289,7 +291,6 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                 stmts;
             };
             case _:{
-                //trace("end");
                 stmts;
             }
         });

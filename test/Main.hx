@@ -6,14 +6,7 @@ import xlua.Parser;
 
 class Main {
     public static function main() {
-        var str = 'print(x)
-                   while x > 2 do 
-                        if x == 2 then 
-                            return 2
-                        else 
-                            return x
-                        end
-                   end';
+        var str = 'local x = {["myFunc"] = function(x) print(2) end}';
         var byteData = ByteData.ofString(str);
         var lex = new Lexer(byteData, "test.lua");
         var ts = new hxparse.LexerTokenSource(lex, Lexer.tok);

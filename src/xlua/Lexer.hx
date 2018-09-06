@@ -20,7 +20,7 @@ enum LexerErrorMsg {
 class LexerError {
 	public var msg:LexerErrorMsg;
 	public var pos:Dynamic;
-	public function new(msg, pos) {
+	public function new(msg, pos:Dynamic) {
 		this.msg = msg;
 		this.pos = pos;
 	}
@@ -28,13 +28,17 @@ class LexerError {
 
 class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
 
-	static function mkPos(p:hxparse.Position, ?td) {
-		return {
+	static function mkPos(p:hxparse.Position, ?td):Dynamic {
+		var pos = {
 			file: p.psource,
 			min: p.pmin,
 			max: p.pmax,
-			line: p.getLinePosition(td)
+			line: null
 		};
+		if(td != null){
+			pos.line = p.getLinePosition(td);
+		}
+		return pos;
 	}
 
 
@@ -199,7 +203,7 @@ class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
 	 	"\\]\\]" => lexer.curPos().pmax,
 	];
 
-	static inline function unescapePos(pos:Dynamic, index:Int, length:Int) {
+	static inline function unescapePos(pos:Dynamic, index:Int, length:Int):Dynamic {
 		return {
 			file: pos.source,
 			min: pos.min + index,

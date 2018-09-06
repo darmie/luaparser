@@ -141,11 +141,15 @@ enum RuleStat {
     SIfThen(condition:RuleExpr, then:Array<RuleStat>, _else:Array<RuleStat>);
     SReturn(exprs:Array<RuleExpr>);
     SDoBlock(stmts:Array<RuleStat>);
+    STable(table:RuleExpr);
     SBreak;
     SEnd;
 }
 
-
+typedef Field = {
+	key:Dynamic,
+	value:RuleExpr
+}
 
 // Expression Rules
 enum RuleExpr {
@@ -156,7 +160,8 @@ enum RuleExpr {
     EString(value:String);
     EFunction(params:Array<RuleExpr>, hasVargs:Bool, block:Array<RuleStat>);
     EFunctionCall(func:RuleExpr, receiver:RuleExpr, method:RuleExpr, args:Array<RuleExpr>, adjustRet:Bool);
-    ETable(fields:xlua.ast.Field);
+    ETable(fields:Array<Field>);
+    ETableConstr(fields:Array<Field>);
     ETrippleDot;
     EUnopNot(e:RuleExpr);
     EUnopMinus(e:RuleExpr);

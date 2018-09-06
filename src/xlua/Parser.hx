@@ -78,46 +78,147 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                         lhs.push(EIdent(s));
                         var method = null;
                         var params = [];
+                        //var moreCalls = [];
                         // check if its a function call
                         switch stream {
                             case [{tok:Col} | {tok:Dot}]:{
-                                switch stream {
-                                    case [{tok:Const(CIdent(s))}]:{
-                                        method = EIdent(s);
-                                        switch stream {
-                                            case [{tok:POpen}]:{
-                                                parseExprList(params);
-                                                stmts.push(SFunctionCall(EFunctionCall(null, lhs[0], method, params, false)));
-                                                switch stream {
-                                                    case [_ => v]:{
-                                                        switch v {
-                                                            case {tok:PClose}:
-                                                            default:{
-                                                                throw "Parse error: Parenthesis opened but not closed. expected ')'";
+                                var reRun= function (){}
+                                var stat = null;
+                                reRun = function (){
+                                    switch stream {
+                                        case [{tok:Const(CIdent(s))}]:{
+                                            method = EIdent(s);
+                                            stat = STable(ETable([{key:lhs[0], value:method}]));
+                                            switch stream {
+                                                case [{tok:POpen}]:{
+                                                    parseExprList(params);
+                                                    
+                                                    switch stream {
+                                                        case [_ => v]:{
+                                                            switch v {
+                                                                case {tok:PClose}: {
+                                                                    stat = STable(ETable([{key:stat, value:EFunctionCall(null, null, method, params, false)}]));
+                                                                   switch stream {
+                                                                       case [{tok:Col} | {tok:Dot}]:{
+                                                                           reRun();
+                                                                       }
+                                                                   }
+                                                                }
+                                                                default:{
+                                                                    throw "Parse error: Parenthesis opened but not closed. expected ')'";
+                                                                }
                                                             }
                                                         }
                                                     }
+                                                    
+                                                };
+                                                case [{tok:Col} | {tok:Dot}]:{
+                                                    
+                                                    var cont = function (){};
+                                                    cont = function(){
+                                                        switch  stream {
+                                                            case [{tok:Const(CIdent(s))}]:{
+                                                                
+                                                                switch stream {
+                                                                    case [{tok:POpen}]:{
+                                                                        var nParams = [];
+                                                                        parseExprList(nParams);
+                                                                        switch stream {
+                                                                            case [_ => v]:{
+                                                                                switch v {
+                                                                                    case {tok:PClose}: {
+                                                                                        stat = STable(ETable([{key:stat, value:EFunctionCall(null, EIdent(s), null, nParams, false)}]));
+                                                                                        switch stream {
+                                                                                            case [{tok:Col} | {tok:Dot}]:{
+                                                                                                cont();
+                                                                                            };
+                                                                                            case _:
+                                                                                        }
+                                                                                    };
+                                                                                    default:{
+                                                                                        throw "Parse error: Parenthesis opened but not closed. expected ')'";
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            case _:
+                                                                        }
+                                                                    };
+                                                                    case [{tok:Col} | {tok:Dot}]:{
+                                                                        stat = STable(ETable([{key:stat, value:EIdent(s)}]));
+                                                                        cont();
+                                                                    }
+                                                                    case _: {
+                                                                        stat = STable(ETable([{key:stat, value:EIdent(s)}]));
+                                                                    }
+                                                                }
+                                                            }
+                                                            case _:
+                                                        }
+                                                    };
+
+                                                    cont();
                                                 }
-                                            };
-                                            case _:
-                                        }
-                                    };
+                                                case _:
+                                            }
+                                        };
+                                        case _:
+                                    }
                                 }
+                                reRun(); 
+                                stmts.push(stat);
                             };
                             case [{tok:POpen}]:{
+                                var method = null;
                                 parseExprList(params);
-                                stmts.push(SFunctionCall(EFunctionCall(null, lhs[0], null, params, false)));
+                                var func = SFunctionCall(EFunctionCall(null, lhs[0], null, params, false));
                                 switch stream {
+                                    case [{tok:Col} | {tok:Dot}]:{
+                                        var reRun= function (){}
+                                        reRun = function (){
+                                            switch stream {
+                                                case [{tok:Const(CIdent(s))}]:{
+                                                    var nParams = [];
+                                                    method = EIdent(s);
+                                                    switch stream {
+                                                        case [{tok:POpen}]:{
+                                                            parseExprList(nParams);
+                                                            switch stream {
+                                                                case [_ => v]:{
+                                                                    switch v {
+                                                                        case {tok:PClose}:{}
+                                                                        default:{
+                                                                            throw "Parse error: Parenthesis opened but not closed. expected ')'";
+                                                                        }
+                                                                    }
+                                                                };
+                                                                case _:
+                                                            }
+                                                        };
+                                                        case _:
+                                                        
+                                                    }
+                                                    func = SFunctionCall(EFunctionCall(null, lhs[0], method, nParams, false));
+                                                };
+                                                case _:
+                                            }
+                                        }
+                                        reRun();
+                                        stmts.push(func);
+                                    };
                                     case [_ => v]:{
                                         switch v {
-                                            case {tok:PClose}:
+                                            case {tok:PClose}:{}
                                             default:{
                                                 throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                             }
                                         }
                                     }
+                                    case _:
                                 }
+
+                                stmts.push(func);
                             };
+                            case _:
                         }
                     };
                     case _:
@@ -242,7 +343,8 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                                throw "Parse error: Parenthesis opened but not closed. expected ')'";
                                            }
                                        }
-                                   }
+                                   };
+                                   case _:
                                }
                            };
                            case _:
@@ -268,6 +370,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                         };
 
                     }
+                    case _:
                 }
                 stmts.push(SParenthesis(exprs));
                 parseStatements(stmts);
@@ -394,11 +497,12 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                         switch v.tok {
                                             case Kwd(KwdEnd):{
                                             }
-                                            default: {
+                                            case _:
                                                 throw "Parse Error: if block not closed";
-                                            }
+                                            
                                         }
-                                    }                                    
+                                    };
+                                    case _:                                   
                                 }
                                 
                             };
@@ -406,13 +510,11 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                 parseIfStatement(_else);
                             }
                             case [_ => v]:{
-                                
                                 switch v.tok {
                                     case Kwd(KwdEnd):{
                                     }
-                                    default: {
+                                    case _:
                                         throw "Parse Error: if block not closed";
-                                    }
                                 }
                             }
                         }
@@ -499,6 +601,61 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                                 case _:
                             }                            
                         };
+                        case [{tok:BrOpen}]:{
+                            var v1 = null;
+                            var v2 = [];
+                            var tab = null;
+                            var fields = [];
+                            var cont = function(){};
+                            cont = function(){
+                                switch stream {
+                                    case [{tok:Const(CIdent(s))}]:{
+                                        v1 = EIdent(s);
+                                        tab = ETableConstr([{key:v1, value:null}]);
+                                        switch stream {
+                                            case [{tok:Binop(OpAssign)}]:{
+                                                parseExprList(v2);
+                                                fields.push({key:v1, value:v2[0]});
+                                            };
+                                            case _:
+                                        }
+                                    };
+                                    case [{tok:BkOpen}]:{
+                                        parseExprList(v2);
+                                        fields.push({key:v1, value:v2[0]});
+                                        switch stream {
+                                            case [_ => v]:{
+                                                switch v.tok {
+                                                    case BkClose:{}
+                                                    case _:
+                                                        throw "Parse error: expected ']'";
+                                                }
+                                            };
+                                        }
+                                    };
+                                    case [{tok:Const(CString(s))}]:{
+                                        fields.push({key:null, value:EString(s)});
+                                    };
+                                    case [{tok:Comma}]:{
+                                        reRun();
+                                    };
+                                    case [_ => v]:{
+                                        switch v.tok {
+                                            case BrClose:{};
+                                            case _:{
+                                                throw "Parse error: expected '}'";
+                                            };
+                                        }
+                                    };
+                                    
+                                }
+                            }
+                            cont();
+                            tab = ETableConstr(fields);
+                            trace(tab);
+                            ret.push(tab);
+                            ret;
+                        }
                         case [{tok:Kwd(KwdFunction)}]:{
                             var func = parseFunctionBody();
                             ret.push(func);
@@ -599,6 +756,95 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<Token>, Token> {
                 reRun();
                 ret;
             };
+            case [{tok:BrOpen}]:{
+                            var v1 = null;
+                            var v2 = [];
+                            var tab = null;
+                            var fields = [];
+                            var cont = function(){};
+                            cont = function(){
+                                switch stream {
+                                    case [{tok:Const(CIdent(s))}]:{
+                                        v1 = EIdent(s);
+                                        tab = ETableConstr([{key:v1, value:null}]);
+                                        switch stream {
+                                            case [{tok:Binop(OpAssign)}]:{
+                                                parseExprList(v2);
+                                                fields.push({key:v1, value:v2[0]});
+                                                cont();
+                                            };
+                                            case _:
+                                        }
+                                        //cont();
+                                    };
+                                    case [{tok:BkOpen}]:{
+                                        var exprs = [];
+                                        parseExprList(exprs);
+                                        v1 = exprs[0];
+                                        switch stream {
+                                            case [_ => v]:{
+                                                switch v.tok {
+                                                    case BkClose:{
+                                                        switch stream {
+                                                            case [{tok:Binop(OpAssign)}]:{
+                                                                parseExprList(v2);
+                                                                fields.push({key:v1, value:v2[0]});
+                                                                
+                                                            };
+                                                            case _:
+                                                        }
+                                                    };
+                                                    case _:
+                                                        throw "Parse error: expected ']'";
+                                                }
+                                            }
+                                            
+                                        }
+                                        
+                                    };
+                                    case [{tok:Binop(OpAssign)}]:{
+                                        var val = [];
+                                        parseExprList(val);
+                                        fields.push({key:v2[1], value:val[0]});
+                                        cont();
+                                    }
+                                    case [{tok:Const(c)}]:{
+                                        var count = fields.length + 1;
+                                        switch c {
+                                            case CString(s): {
+                                                fields.push({key:ENumber(Std.string(count)), value:EString(s)});
+                                            };
+                                            case CInt(s):{
+                                                fields.push({key:ENumber(Std.string(count)), value:ENumber(s)});
+                                            };
+                                            case _:
+                                        }
+                                        
+                                        switch stream {
+                                            case  [{tok:Comma}]:{
+                                                cont();
+                                            }
+                                            case _:
+                                        }
+                                    };
+                                    case [_ => v]:{
+                                        switch v.tok {
+                                            case BrClose:{};
+                                            case _:{
+                                                throw "Parse error: expected '}'";
+                                            };
+                                        }
+                                    };
+                                    
+                                }
+                            }
+                            cont();
+                           
+                            tab = ETableConstr(fields);
+                            ret.push(tab);
+                            reRun();
+                            ret;
+            }
             case _:{
                 ret;
             };

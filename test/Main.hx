@@ -6,7 +6,7 @@ import xlua.Parser;
 
 class Main {
     public static function main() {
-        var str = 'local x = {["myFunc"] = function(x) print(2) end}';
+        var str = 'z = x+2';
         var byteData = ByteData.ofString(str);
         var lex = new Lexer(byteData, "test.lua");
         var ts = new hxparse.LexerTokenSource(lex, Lexer.tok);

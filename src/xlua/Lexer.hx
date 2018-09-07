@@ -183,7 +183,7 @@ class Lexer extends hxparse.Lexer implements hxparse.RuleBuilder {
 			lexer.token(string);
 		},
 		'\\\\"' => {
-			buf.addChar('"'.code);
+			buf.addChar("'".code);
 			lexer.token(string);
 		},
 		"\\\\u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]" => {

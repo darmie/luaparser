@@ -168,7 +168,7 @@ enum RuleExpr {
     EUnopLen(e:RuleExpr);
     ELogicalOp(lhs:RuleExpr, rhs:RuleExpr, op:String);
     EArithmeticOp(lhs:RuleExpr, rhs:RuleExpr, op:String);
-    EAttrGet(object:RuleExpr, key:Expr);
+    EAttrGet(object:Dynamic, key:Dynamic);
     EIdent(value:String);
     EStringConcat(lhs:RuleExpr, rhs:RuleExpr);
 }

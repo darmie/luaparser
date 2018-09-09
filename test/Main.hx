@@ -6,11 +6,11 @@ import xlua.Parser;
 
 class Main {
     public static function main() {
-        var str = 'z = x+2';
+        var str = 'x(y, w, z(d))';
         var byteData = ByteData.ofString(str);
         var lex = new Lexer(byteData, "test.lua");
         var ts = new hxparse.LexerTokenSource(lex, Lexer.tok);
         var p = new Parser(ts);
-        trace(p.parseLua());
+        trace(p.parseExpr());
     }
 }
